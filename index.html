@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mie sin app</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f0e0;color:#2a2a2a;min-height:100vh;padding:2rem 1rem;}
+  .container{max-width:720px;margin:0 auto;}
+  .login-box{background:#fff;border:1px solid #d4a843;border-radius:16px;padding:2rem;max-width:360px;margin:4rem auto;text-align:center;}
+  .login-box h1{font-size:28px;font-weight:500;color:#b8860b;margin-bottom:8px;}
+  .login-box p{font-size:14px;color:#888;margin-bottom:1.5rem;}
+  .login-box input{width:100%;border:1px solid #d4a843;border-radius:8px;padding:10px 14px;font-size:15px;font-family:inherit;color:#2a2a2a;background:#fffdf5;outline:none;margin-bottom:12px;}
+  .login-box button{width:100%;background:#d4a843;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;cursor:pointer;font-family:inherit;font-weight:500;}
+  .login-box button:hover{background:#b8860b;}
+  .login-error{color:#cc3333;font-size:13px;margin-top:8px;}
+  .angel{font-size:48px;margin-bottom:12px;}
+  h1.app-title{font-size:22px;font-weight:500;margin-bottom:4px;color:#b8860b;}
+  .subtitle{font-size:13px;color:#a08040;margin-bottom:1.5rem;}
+  .tab-bar{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .tab{padding:8px 16px;border:1px solid #d4a843;border-radius:8px;background:#fff;font-size:14px;cursor:pointer;color:#a08040;}
+  .tab.active{background:#d4a843;color:#fff;border-color:#d4a843;font-weight:500;}
+  .section{display:none;}
+  .section.active{display:block;}
+  .card{background:#fff;border:1px solid #e8d5a0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px;}
+  .avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:13px;flex-shrink:0;}
+  .av-gold{background:#fff3cc;color:#b8860b;}
+  .av-blue{background:#dbeafe;color:#1e3a8a;}
+  .av-teal{background:#d1fae5;color:#064e3b;}
+  .av-purple{background:#ede9fe;color:#4c1d95;}
+  .av-rose{background:#ffe4e6;color:#9f1239;}
+  .av-green{background:#dcfce7;color:#14532d;}
+  .av-orange{background:#ffedd5;color:#7c2d12;}
+  .av-white{background:#f5f0e0;color:#b8860b;}
+  .section-label{font-size:11px;color:#a08040;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;font-weight:500;}
+  .badge{font-size:11px;padding:3px 9px;border-radius:8px;display:inline-block;}
+  .badge-note{background:#fff3cc;color:#b8860b;}
+  .badge-task{background:#dbeafe;color:#1e3a8a;}
+  .badge-done{background:#d1fae5;color:#064e3b;}
+  .badge-challenge{background:#ffe4e6;color:#9f1239;}
+  textarea{width:100%;border:1px solid #d4a843;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;resize:vertical;min-height:80px;outline:none;}
+  textarea::placeholder{color:#c8a860;}
+  input[type=text]{width:100%;border:1px solid #d4a843;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;outline:none;}
+  input[type=text]::placeholder{color:#c8a860;}
+  input[type=file]{display:none;}
+  select{border:1px solid #d4a843;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;outline:none;width:100%;}
+  .btn{padding:8px 14px;border:1px solid #d4a843;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;color:#b8860b;}
+  .btn:hover{background:#fff3cc;}
+  .btn-primary{background:#d4a843;color:#fff;border-color:#d4a843;font-weight:500;}
+  .btn-primary:hover{background:#b8860b;}
+  .btn-camera{background:#d4a843;color:#fff;border-color:#d4a843;font-size:13px;padding:8px 14px;border-radius:8px;border-width:1px;border-style:solid;cursor:pointer;}
+  .btn-library{background:#fff;color:#b8860b;border-color:#d4a843;font-size:13px;padding:8px 14px;border-radius:8px;border-width:1px;border-style:solid;cursor:pointer;}
+  .btn-sm{padding:3px 9px;font-size:12px;border:1px solid #d4a843;border-radius:6px;background:#fff;cursor:pointer;color:#a08040;}
+  .btn-edit{padding:3px 7px;font-size:12px;border:1px solid #d4a843;border-radius:6px;background:#fff;cursor:pointer;color:#b8860b;}
+  .btn-save{padding:3px 7px;font-size:12px;border:1px solid #22c55e;border-radius:6px;background:#fff;cursor:pointer;color:#15803d;}
+  .person-tab-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .ptab{padding:6px 14px;border:1px solid #d4a843;border-radius:8px;font-size:13px;cursor:pointer;color:#a08040;background:#fff;}
+  .ptab.active{background:#d4a843;color:#fff;font-weight:500;border-color:#d4a843;}
+  .item-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #f0e0b0;}
+  .item-row:last-child{border-bottom:none;}
+  .item-row input[type=checkbox]{width:15px;height:15px;flex-shrink:0;accent-color:#d4a843;cursor:pointer;}
+  .item-text{font-size:13px;color:#2a2a2a;flex:1;line-height:1.5;}
+  .item-text.done{text-decoration:line-through;color:#aaa;}
+  .item-edit-input{flex:1;border:1px solid #d4a843;border-radius:6px;padding:4px 8px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;outline:none;}
+  .note-item{padding:8px 0;border-bottom:1px solid #f0e0b0;font-size:13px;color:#2a2a2a;line-height:1.5;display:flex;gap:6px;align-items:flex-start;}
+  .note-item:last-child{border-bottom:none;}
+  .note-dot{width:6px;height:6px;border-radius:50%;background:#d4a843;flex-shrink:0;margin-top:6px;}
+  .photo-item{padding:8px 0;border-bottom:1px solid #f0e0b0;display:flex;gap:8px;align-items:flex-start;}
+  .photo-item:last-child{border-bottom:none;}
+  .photo-item img{width:50%;max-width:150px;height:auto;object-fit:cover;border-radius:8px;border:1px solid #d4a843;cursor:pointer;}
+  .metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem;}
+  .metric{background:#fff;border-radius:8px;padding:0.75rem 1rem;border:1px solid #e8d5a0;cursor:pointer;transition:background 0.15s;}
+  .metric:hover{background:#fffdf5;}
+  .metric-label{font-size:12px;color:#a08040;margin-bottom:3px;}
+  .metric-val{font-size:22px;font-weight:500;color:#b8860b;}
+  .person-card{background:#fff;border:1px solid #e8d5a0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.15s;}
+  .person-card:hover{background:#fffdf5;}
+  .subsection{margin-top:16px;padding-top:14px;border-top:1px solid #f0e0b0;}
+  .add-row{display:flex;gap:8px;margin-top:8px;}
+  .add-row input{flex:1;}
+  .empty{font-size:13px;color:#c8a860;padding:6px 0;}
+  .sync-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:#a08040;margin-bottom:1rem;}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#d1fae5;border:1px solid #6ee7b7;}
+  .sync-dot.syncing{background:#fff3cc;border-color:#d4a843;}
+  .sync-dot.error{background:#ffe4e6;border-color:#fca5a5;}
+  .uploading{font-size:12px;color:#a08040;padding:6px 0;font-style:italic;}
+  .photo-btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  @media(max-width:500px){.metric-row{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="angel">👼</div>
+    <h1>Hei Mie!</h1>
+    <p>Skriv inn passordet ditt for å komme inn</p>
+    <input type="password" id="password-input" placeholder="Passord..." onkeydown="if(event.key==='Enter')checkPassword()" />
+    <button onclick="checkPassword()">Logg inn</button>
+    <p class="login-error" id="login-error"></p>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="container">
+    <h1 class="app-title">👼 Mie sin app</h1>
+    <p class="subtitle">SAM · Studier · Privat · Applications · Meg selv</p>
+    <div class="sync-bar">
+      <div class="sync-dot syncing" id="sync-dot"></div>
+      <span id="sync-status">Laster data...</span>
+      <button class="btn-sm" onclick="syncFromSheet()" style="margin-left:auto;">Oppdater</button>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active" id="tab-oversikt" onclick="showTab('oversikt',this)">Oversikt</button>
+      <button class="tab" id="tab-sam" onclick="showTab('sam',this)">SAM</button>
+      <button class="tab" id="tab-studier" onclick="showTab('studier',this)">Studier</button>
+      <button class="tab" id="tab-privat" onclick="showTab('privat',this)">Privat</button>
+      <button class="tab" id="tab-applications" onclick="showTab('applications',this)">Applications</button>
+      <button class="tab" id="tab-meg" onclick="showTab('meg',this)">Meg selv</button>
+    </div>
+    <div id="oversikt" class="section active"></div>
+    <div id="sam" class="section">
+      <div class="person-tab-bar" id="sam-tabs"></div>
+      <div id="sam-content"></div>
+    </div>
+    <div id="studier" class="section">
+      <div class="person-tab-bar" id="studier-tabs"></div>
+      <div id="studier-content"></div>
+    </div>
+    <div id="privat" class="section">
+      <div class="person-tab-bar" id="privat-tabs"></div>
+      <div id="privat-content"></div>
+    </div>
+    <div id="applications" class="section">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div class="avatar av-purple">AP</div>
+          <span style="font-weight:500;font-size:16px;color:#b8860b;">Applications</span>
+        </div>
+        <p class="section-label">Huskeliste</p>
+        <div id="app-notes-list"></div>
+        <div class="add-row">
+          <input type="text" id="new-app-note" placeholder="Legg til søknad eller notat..." onkeydown="if(event.key==='Enter')addAppNote()" />
+          <button class="btn" onclick="addAppNote()">Legg til</button>
+        </div>
+      </div>
+    </div>
+    <div id="meg" class="section">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div class="avatar av-white">MH</div>
+          <span style="font-weight:500;font-size:16px;color:#b8860b;">Mine notater</span>
+        </div>
+        <p class="section-label">Huskeliste</p>
+        <p style="font-size:12px;color:#a08040;margin-bottom:8px;">Tekst eller bilde</p>
+        <div id="self-notes-list"></div>
+        <div class="add-row">
+          <input type="text" id="new-self-note" placeholder="Skriv noe du vil huske..." onkeydown="if(event.key==='Enter')addSelfNote()" />
+          <button class="btn" onclick="addSelfNote()">Legg til</button>
+        </div>
+        <div class="photo-btns">
+          <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handlePhoto(this)" />
+          <input type="file" id="library-input" accept="image/*" onchange="handlePhoto(this)" />
+          <button class="btn-camera" onclick="document.getElementById('camera-input').click()">📷 Ta bilde</button>
+          <button class="btn-library" onclick="document.getElementById('library-input').click()">🖼 Velg fra bibliotek</button>
+          <span id="upload-status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PASSWORD='Mie123';
+const API='https://script.google.com/macros/s/AKfycbxyZSxlW3f9kWwvaFd9Ez7S4hiP-HV9t11A3mrXKBZu6zAQTYT8uuvpKvCRVGuRM1hp/exec';
+const USER='mie';
+
+const SAM_ITEMS=[
+  {id:'sam_tasks',name:'Tasks',initials:'TS',avClass:'av-gold'},
+  {id:'sam_mehmet',name:'Mehmet',initials:'ME',avClass:'av-blue'},
+  {id:'sam_tom',name:'Tom',initials:'TO',avClass:'av-teal'}
+];
+const STUDIER_ITEMS=[
+  {id:'stud_major',name:'Major Project',initials:'MP',avClass:'av-purple'},
+  {id:'stud_uncertainty',name:'Uncertainty Report',initials:'UR',avClass:'av-rose'},
+  {id:'stud_gmat',name:'GMAT',initials:'GM',avClass:'av-green'}
+];
+const PRIVAT_ITEMS=[
+  {id:'priv_admin',name:'Admin stuff',initials:'AD',avClass:'av-orange'},
+  {id:'priv_trening',name:'Trening',initials:'TR',avClass:'av-teal'},
+  {id:'priv_personal',name:'Personal',initials:'PE',avClass:'av-rose'}
+];
+
+let notes={};
+let selfNotes=[];
+let appNotes=[];
+let activeSam=SAM_ITEMS[0].id;
+let activeStudier=STUDIER_ITEMS[0].id;
+let activePrivat=PRIVAT_ITEMS[0].id;
+
+function checkPassword(){
+  const val=document.getElementById('password-input').value;
+  if(val===PASSWORD){
+    localStorage.setItem('mie_auth','yes');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    syncFromSheet();
+  } else {
+    document.getElementById('login-error').textContent='Feil passord, prøv igjen.';
+  }
+}
+
+window.onload=function(){
+  if(localStorage.getItem('mie_auth')==='yes'){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    syncFromSheet();
+  }
+};
+
+function today(){return new Date().toLocaleDateString('no-NO',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function uid(){return USER+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function setSyncStatus(state,msg){
+  document.getElementById('sync-dot').className='sync-dot '+state;
+  document.getElementById('sync-status').textContent=msg;
+}
+function goToTab(tabId){showTab(tabId,document.getElementById('tab-'+tabId));}
+
+function makeNoteRow(note,saveType,onDelete){
+  return `<div class="note-item" id="row-${note.id}">
+    <div class="note-dot" style="margin-top:8px;flex-shrink:0;"></div>
+    <span class="item-text" id="txt-${note.id}" style="flex:1;">${escHtml(note.text)}<span style="font-size:11px;color:#c8a860;margin-left:8px;">${note.date}</span></span>
+    <input class="item-edit-input" id="edit-${note.id}" style="display:none;" value="${escHtml(note.text)}" onkeydown="if(event.key==='Enter')saveEdit('${note.id}','${saveType}')" />
+    <button class="btn-edit" id="ebtn-${note.id}" onclick="startEdit('${note.id}')">✏️</button>
+    <button class="btn-save" id="sbtn-${note.id}" style="display:none;" onclick="saveEdit('${note.id}','${saveType}')">✓</button>
+    <button class="btn-sm" onclick="${onDelete}('${note.id}')">×</button>
+  </div>`;
+}
+
+function startEdit(id){
+  document.getElementById('txt-'+id).style.display='none';
+  document.getElementById('edit-'+id).style.display='';
+  document.getElementById('edit-'+id).focus();
+  document.getElementById('ebtn-'+id).style.display='none';
+  document.getElementById('sbtn-'+id).style.display='';
+}
+
+function saveEdit(id,type){
+  const val=document.getElementById('edit-'+id).value.trim();
+  if(!val)return;
+  if(type==='note'){
+    for(const key in notes){const n=notes[key].find(x=>x.id===id);if(n){n.text=val;break;}}
+    saveToSheet();renderCurrentSection();
+  } else if(type==='selfnote'){
+    const n=selfNotes.find(x=>x.id===id);if(n){n.text=val;saveToSheet();renderSelf();}
+  } else if(type==='appnote'){
+    const n=appNotes.find(x=>x.id===id);if(n){n.text=val;saveToSheet();renderAppNotes();}
+  }
+}
+
+function renderCurrentSection(){
+  renderSamContent();renderStudierContent();renderPrivatContent();renderOversikt();
+}
+
+async function handlePhoto(input){
+  if(!input.files||!input.files[0])return;
+  const file=input.files[0];
+  const statusEl=document.getElementById('upload-status');
+  statusEl.className='uploading';
+  statusEl.textContent='Laster opp bilde...';
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const base64=e.target.result.split(',')[1];
+    const mimeType=file.type;
+    const filename='mie_bilde_'+Date.now()+'.jpg';
+    try{
+      const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'uploadImage',data:base64,mimeType,filename})});
+      const data=await res.json();
+      if(data.url){
+        selfNotes.unshift({id:uid(),text:'',imageUrl:data.url,date:today()});
+        statusEl.textContent='Bilde lastet opp!';
+        setTimeout(()=>statusEl.textContent='',2000);
+        saveToSheet();renderSelf();renderOversikt();
+      }
+    }catch(err){statusEl.textContent='Feil ved opplasting';}
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+async function syncFromSheet(){
+  setSyncStatus('syncing','Henter data...');
+  try{
+    const res=await fetch(API+'?t='+Date.now());
+    const rows=await res.json();
+    const mieRows=rows.filter(r=>String(r.pid).startsWith('mie_')||String(r.text).startsWith('mie_'));
+    notes={};
+    [...SAM_ITEMS,...STUDIER_ITEMS,...PRIVAT_ITEMS].forEach(item=>{notes[item.id]=[];});
+    mieRows.filter(r=>r.type==='mienote').forEach(r=>{
+      const parts=r.text.split('||');
+      const id=parts[0];
+      const cat=r.pid;
+      const text=parts.slice(1).join('||');
+      if(notes[cat]!==undefined){notes[cat].push({id,text,date:r.date});}
+    });
+    selfNotes=mieRows.filter(r=>r.type==='mieself').map(r=>{
+      const parts=r.text.split('||');
+      const id=parts[0];
+      const rest=parts.slice(1).join('||');
+      if(rest.startsWith('IMG:')){return{id,text:'',imageUrl:rest.slice(4),date:r.date};}
+      return{id,text:rest,imageUrl:'',date:r.date};
+    });
+    appNotes=mieRows.filter(r=>r.type==='mieapp').map(r=>({
+      id:r.text.split('||')[0],text:r.text.split('||').slice(1).join('||'),date:r.date
+    }));
+    setSyncStatus('','Synkronisert '+today());
+    renderAll();
+  }catch(e){setSyncStatus('error','Feil ved henting');}
+}
+
+async function saveToSheet(){
+  setSyncStatus('syncing','Lagrer...');
+  const rows=[];
+  [...SAM_ITEMS,...STUDIER_ITEMS,...PRIVAT_ITEMS].forEach(item=>{
+    (notes[item.id]||[]).forEach(n=>{
+      rows.push({type:'mienote',pid:item.id,text:n.id+'||'+n.text,date:n.date,done:'false'});
+    });
+  });
+  selfNotes.forEach(n=>{
+    rows.push({type:'mieself',pid:'mie_self',text:n.id+'||'+(n.imageUrl?'IMG:'+n.imageUrl:n.text),date:n.date,done:'false'});
+  });
+  appNotes.forEach(n=>{
+    rows.push({type:'mieapp',pid:'mie_app',text:n.id+'||'+n.text,date:n.date,done:'false'});
+  });
+
+  try{
+    const res=await fetch(API+'?t='+Date.now());
+    const allRows=await res.json();
+    const otherRows=allRows.filter(r=>!['mienote','mieself','mieapp'].includes(r.type));
+    await fetch(API,{method:'POST',body:JSON.stringify({action:'replace',rows:[...otherRows,...rows]})});
+    setSyncStatus('','Lagret '+today());
+  }catch(e){setSyncStatus('error','Feil ved lagring');}
+}
+
+function renderAll(){renderOversikt();renderSamTabs();renderSamContent();renderStudierTabs();renderStudierContent();renderPrivatTabs();renderPrivatContent();renderSelf();renderAppNotes();}
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='oversikt')renderOversikt();
+  if(id==='sam'){renderSamTabs();renderSamContent();}
+  if(id==='studier'){renderStudierTabs();renderStudierContent();}
+  if(id==='privat'){renderPrivatTabs();renderPrivatContent();}
+  if(id==='applications')renderAppNotes();
+  if(id==='meg')renderSelf();
+}
+
+function renderOversikt(){
+  const el=document.getElementById('oversikt');
+  const totalNotes=Object.values(notes).reduce((a,b)=>a+b.length,0);
+  el.innerHTML=`
+    <div class="metric-row">
+      <div class="metric" onclick="goToTab('sam')"><div class="metric-label">SAM notater</div><div class="metric-val">${[...SAM_ITEMS].reduce((a,i)=>a+(notes[i.id]||[]).length,0)}</div></div>
+      <div class="metric" onclick="goToTab('studier')"><div class="metric-label">Studier notater</div><div class="metric-val">${[...STUDIER_ITEMS].reduce((a,i)=>a+(notes[i.id]||[]).length,0)}</div></div>
+      <div class="metric" onclick="goToTab('privat')"><div class="metric-label">Privat notater</div><div class="metric-val">${[...PRIVAT_ITEMS].reduce((a,i)=>a+(notes[i.id]||[]).length,0)}</div></div>
+      <div class="metric" onclick="goToTab('applications')"><div class="metric-label">Applications</div><div class="metric-val">${appNotes.length}</div></div>
+      <div class="metric" onclick="goToTab('meg')"><div class="metric-label">Mine notater</div><div class="metric-val">${selfNotes.length}</div></div>
+    </div>
+    <p class="section-label" style="margin-bottom:8px;">Kategorier</p>
+    ${[
+      {id:'sam',label:'SAM',items:SAM_ITEMS,avClass:'av-gold',initials:'SAM'},
+      {id:'studier',label:'Studier',items:STUDIER_ITEMS,avClass:'av-purple',initials:'ST'},
+      {id:'privat',label:'Privat',items:PRIVAT_ITEMS,avClass:'av-rose',initials:'PR'}
+    ].map(cat=>{
+      const count=cat.items.reduce((a,i)=>a+(notes[i.id]||[]).length,0);
+      return `<div class="person-card" onclick="goToTab('${cat.id}')">
+        <div class="avatar ${cat.avClass}">${cat.initials}</div>
+        <div style="flex:1;"><div style="font-weight:500;font-size:14px;color:#2a2a2a;">${cat.label}</div><div style="font-size:12px;color:#a08040;">${cat.items.map(i=>i.name).join(' · ')}</div></div>
+        <div>${count>0?`<span class="badge badge-note">${count} notater</span>`:'<span class="badge badge-done">Tomt</span>'}</div>
+      </div>`;
+    }).join('')}
+    <div class="person-card" onclick="goToTab('applications')">
+      <div class="avatar av-purple">AP</div>
+      <div style="flex:1;"><div style="font-weight:500;font-size:14px;color:#2a2a2a;">Applications</div><div style="font-size:12px;color:#a08040;">Søknader og notater</div></div>
+      <div>${appNotes.length>0?`<span class="badge badge-note">${appNotes.length} notater</span>`:'<span class="badge badge-done">Tomt</span>'}</div>
+    </div>
+    <div class="person-card" onclick="goToTab('meg')">
+      <div class="avatar av-white">MH</div>
+      <div style="flex:1;"><div style="font-weight:500;font-size:14px;color:#2a2a2a;">Meg selv</div><div style="font-size:12px;color:#a08040;">Mine huskenotater</div></div>
+      <div>${selfNotes.length>0?`<span class="badge badge-note">${selfNotes.length} notater</span>`:'<span class="badge badge-done">Tomt</span>'}</div>
+    </div>`;
+}
+
+function renderSamTabs(){
+  document.getElementById('sam-tabs').innerHTML=SAM_ITEMS.map(i=>
+    `<button class="ptab ${i.id===activeSam?'active':''}" onclick="switchSam('${i.id}')">${i.name}</button>`
+  ).join('');
+}
+function switchSam(id){activeSam=id;renderSamTabs();renderSamContent();}
+function renderSamContent(){
+  const item=SAM_ITEMS.find(x=>x.id===activeSam);
+  const itemNotes=notes[item.id]||[];
+  document.getElementById('sam-content').innerHTML=renderCategoryCard(item,itemNotes,'deleteSamNote','addSamNote');
+}
+
+function renderStudierTabs(){
+  document.getElementById('studier-tabs').innerHTML=STUDIER_ITEMS.map(i=>
+    `<button class="ptab ${i.id===activeStudier?'active':''}" onclick="switchStudier('${i.id}')">${i.name}</button>`
+  ).join('');
+}
+function switchStudier(id){activeStudier=id;renderStudierTabs();renderStudierContent();}
+function renderStudierContent(){
+  const item=STUDIER_ITEMS.find(x=>x.id===activeStudier);
+  const itemNotes=notes[item.id]||[];
+  document.getElementById('studier-content').innerHTML=renderCategoryCard(item,itemNotes,'deleteStudierNote','addStudierNote');
+}
+
+function renderPrivatTabs(){
+  document.getElementById('privat-tabs').innerHTML=PRIVAT_ITEMS.map(i=>
+    `<button class="ptab ${i.id===activePrivat?'active':''}" onclick="switchPrivat('${i.id}')">${i.name}</button>`
+  ).join('');
+}
+function switchPrivat(id){activePrivat=id;renderPrivatTabs();renderPrivatContent();}
+function renderPrivatContent(){
+  const item=PRIVAT_ITEMS.find(x=>x.id===activePrivat);
+  const itemNotes=notes[item.id]||[];
+  document.getElementById('privat-content').innerHTML=renderCategoryCard(item,itemNotes,'deletePrivatNote','addPrivatNote');
+}
+
+function renderCategoryCard(item,itemNotes,deleteFn,addFn){
+  return `<div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div class="avatar ${item.avClass}">${item.initials}</div>
+      <span style="font-weight:500;font-size:16px;color:#b8860b;">${item.name}</span>
+    </div>
+    <p class="section-label">Huskeliste</p>
+    <div>
+      ${itemNotes.length===0?'<p class="empty">Ingen notater ennå.</p>':''}
+      ${itemNotes.map(n=>makeNoteRow(n,'note',deleteFn)).join('')}
+    </div>
+    <div class="add-row">
+      <input type="text" id="new-note-${item.id}" placeholder="Legg til notat..." onkeydown="if(event.key==='Enter')${addFn}()" />
+      <button class="btn" onclick="${addFn}()">Legg til</button>
+    </div>
+  </div>`;
+}
+
+function addNoteToCategory(catId,inputId){
+  const inp=document.getElementById(inputId);
+  const text=inp.value.trim();if(!text)return;
+  if(!notes[catId])notes[catId]=[];
+  notes[catId].unshift({id:uid(),text,date:today()});
+  inp.value='';saveToSheet();renderAll();
+}
+function deleteNoteFromCategory(catId,id){
+  notes[catId]=(notes[catId]||[]).filter(n=>n.id!==id);
+  saveToSheet();renderAll();
+}
+
+function addSamNote(){addNoteToCategory(activeSam,'new-note-'+activeSam);}
+function deleteSamNote(id){deleteNoteFromCategory(activeSam,id);}
+function addStudierNote(){addNoteToCategory(activeStudier,'new-note-'+activeStudier);}
+function deleteStudierNote(id){deleteNoteFromCategory(activeStudier,id);}
+function addPrivatNote(){addNoteToCategory(activePrivat,'new-note-'+activePrivat);}
+function deletePrivatNote(id){deleteNoteFromCategory(activePrivat,id);}
+
+function renderAppNotes(){
+  const el=document.getElementById('app-notes-list');
+  if(!el)return;
+  el.innerHTML=appNotes.length===0?'<p class="empty">Ingen notater ennå.</p>':
+    appNotes.map(n=>makeNoteRow(n,'appnote','deleteAppNote')).join('');
+}
+function addAppNote(){
+  const inp=document.getElementById('new-app-note');
+  const text=inp.value.trim();if(!text)return;
+  appNotes.unshift({id:uid(),text,date:today()});
+  inp.value='';saveToSheet();renderAppNotes();renderOversikt();
+}
+function deleteAppNote(id){appNotes=appNotes.filter(n=>n.id!==id);saveToSheet();renderAppNotes();renderOversikt();}
+
+function renderSelf(){
+  const nl=document.getElementById('self-notes-list');
+  if(!nl)return;
+  nl.innerHTML=selfNotes.length===0?'<p class="empty">Ingen notater ennå.</p>':
+    selfNotes.map(n=>{
+      if(n.imageUrl){
+        return `<div class="photo-item">
+          <div style="flex:1;">
+            <img src="${n.imageUrl}" alt="Bilde" onclick="window.open('${n.imageUrl}','_blank')" />
+            <div style="font-size:11px;color:#c8a860;margin-top:4px;">${n.date}</div>
+            <button class="btn-sm" style="margin-top:4px;" onclick="deleteSelfNote('${n.id}')">Slett</button>
+          </div>
+        </div>`;
+      }
+      return makeNoteRow(n,'selfnote','deleteSelfNote');
+    }).join('');
+}
+function addSelfNote(){
+  const inp=document.getElementById('new-self-note');
+  const text=inp.value.trim();if(!text)return;
+  selfNotes.unshift({id:uid(),text,imageUrl:'',date:today()});
+  inp.value='';saveToSheet();renderSelf();renderOversikt();
+}
+function deleteSelfNote(id){selfNotes=selfNotes.filter(n=>n.id!==id);saveToSheet();renderSelf();renderOversikt();}
+
+syncFromSheet();
+</script>
+</body>
+</html>
