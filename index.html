@@ -36,7 +36,6 @@
   .section-label{font-size:11px;color:#a08040;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;font-weight:500;}
   .badge{font-size:11px;padding:3px 9px;border-radius:8px;display:inline-block;}
   .badge-note{background:#fff3cc;color:#b8860b;}
-  .badge-task{background:#dbeafe;color:#1e3a8a;}
   .badge-done{background:#d1fae5;color:#064e3b;}
   .badge-challenge{background:#ffe4e6;color:#9f1239;}
   textarea{width:100%;border:1px solid #d4a843;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;resize:vertical;min-height:80px;outline:none;}
@@ -59,9 +58,7 @@
   .ptab.active{background:#d4a843;color:#fff;font-weight:500;border-color:#d4a843;}
   .item-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #f0e0b0;}
   .item-row:last-child{border-bottom:none;}
-  .item-row input[type=checkbox]{width:15px;height:15px;flex-shrink:0;accent-color:#d4a843;cursor:pointer;}
   .item-text{font-size:13px;color:#2a2a2a;flex:1;line-height:1.5;}
-  .item-text.done{text-decoration:line-through;color:#aaa;}
   .item-edit-input{flex:1;border:1px solid #d4a843;border-radius:6px;padding:4px 8px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;outline:none;}
   .note-item{padding:8px 0;border-bottom:1px solid #f0e0b0;font-size:13px;color:#2a2a2a;line-height:1.5;display:flex;gap:6px;align-items:flex-start;}
   .note-item:last-child{border-bottom:none;}
@@ -160,7 +157,7 @@
           <button class="btn" onclick="addSelfNote()">Legg til</button>
         </div>
         <div class="photo-btns">
-          <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handlePhoto(this)" />
+          <input type="file" id="camera-input" accept="image/*" onchange="handlePhoto(this)" />
           <input type="file" id="library-input" accept="image/*" onchange="handlePhoto(this)" />
           <button class="btn-camera" onclick="document.getElementById('camera-input').click()">📷 Ta bilde</button>
           <button class="btn-library" onclick="document.getElementById('library-input').click()">🖼 Velg fra bibliotek</button>
@@ -174,7 +171,6 @@
 <script>
 const PASSWORD='Mie123';
 const API='https://script.google.com/macros/s/AKfycbxyZSxlW3f9kWwvaFd9Ez7S4hiP-HV9t11A3mrXKBZu6zAQTYT8uuvpKvCRVGuRM1hp/exec';
-const USER='mie';
 
 const SAM_ITEMS=[
   {id:'sam_tasks',name:'Tasks',initials:'TS',avClass:'av-gold'},
@@ -192,12 +188,17 @@ const PRIVAT_ITEMS=[
   {id:'priv_personal',name:'Personal',initials:'PE',avClass:'av-rose'}
 ];
 
+const ALL_ITEMS=[...SAM_ITEMS,...STUDIER_ITEMS,...PRIVAT_ITEMS];
+
 let notes={};
 let selfNotes=[];
 let appNotes=[];
 let activeSam=SAM_ITEMS[0].id;
 let activeStudier=STUDIER_ITEMS[0].id;
 let activePrivat=PRIVAT_ITEMS[0].id;
+let isSyncing=false;
+
+ALL_ITEMS.forEach(item=>{notes[item.id]=[];});
 
 function checkPassword(){
   const val=document.getElementById('password-input').value;
@@ -220,8 +221,9 @@ window.onload=function(){
 };
 
 function today(){return new Date().toLocaleDateString('no-NO',{day:'2-digit',month:'2-digit',year:'numeric'});}
-function uid(){return USER+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function uid(){return 'mie_'+Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 function setSyncStatus(state,msg){
   document.getElementById('sync-dot').className='sync-dot '+state;
   document.getElementById('sync-status').textContent=msg;
@@ -252,16 +254,12 @@ function saveEdit(id,type){
   if(!val)return;
   if(type==='note'){
     for(const key in notes){const n=notes[key].find(x=>x.id===id);if(n){n.text=val;break;}}
-    saveToSheet();renderCurrentSection();
+    saveToSheet();renderAll();
   } else if(type==='selfnote'){
     const n=selfNotes.find(x=>x.id===id);if(n){n.text=val;saveToSheet();renderSelf();}
   } else if(type==='appnote'){
     const n=appNotes.find(x=>x.id===id);if(n){n.text=val;saveToSheet();renderAppNotes();}
   }
-}
-
-function renderCurrentSection(){
-  renderSamContent();renderStudierContent();renderPrivatContent();renderOversikt();
 }
 
 async function handlePhoto(input){
@@ -291,13 +289,18 @@ async function handlePhoto(input){
 }
 
 async function syncFromSheet(){
+  if(isSyncing)return;
+  isSyncing=true;
   setSyncStatus('syncing','Henter data...');
   try{
     const res=await fetch(API+'?t='+Date.now());
     const rows=await res.json();
-    const mieRows=rows.filter(r=>String(r.pid).startsWith('mie_')||String(r.text).startsWith('mie_'));
-    notes={};
-    [...SAM_ITEMS,...STUDIER_ITEMS,...PRIVAT_ITEMS].forEach(item=>{notes[item.id]=[];});
+    const mieRows=rows.filter(r=>String(r.text).startsWith('mie_'));
+
+    ALL_ITEMS.forEach(item=>{notes[item.id]=[];});
+    selfNotes=[];
+    appNotes=[];
+
     mieRows.filter(r=>r.type==='mienote').forEach(r=>{
       const parts=r.text.split('||');
       const id=parts[0];
@@ -305,25 +308,36 @@ async function syncFromSheet(){
       const text=parts.slice(1).join('||');
       if(notes[cat]!==undefined){notes[cat].push({id,text,date:r.date});}
     });
-    selfNotes=mieRows.filter(r=>r.type==='mieself').map(r=>{
+
+    mieRows.filter(r=>r.type==='mieself').forEach(r=>{
       const parts=r.text.split('||');
       const id=parts[0];
       const rest=parts.slice(1).join('||');
-      if(rest.startsWith('IMG:')){return{id,text:'',imageUrl:rest.slice(4),date:r.date};}
-      return{id,text:rest,imageUrl:'',date:r.date};
+      if(rest.startsWith('IMG:')){selfNotes.push({id,text:'',imageUrl:rest.slice(4),date:r.date});}
+      else{selfNotes.push({id,text:rest,imageUrl:'',date:r.date});}
     });
-    appNotes=mieRows.filter(r=>r.type==='mieapp').map(r=>({
-      id:r.text.split('||')[0],text:r.text.split('||').slice(1).join('||'),date:r.date
-    }));
+
+    mieRows.filter(r=>r.type==='mieapp').forEach(r=>{
+      const parts=r.text.split('||');
+      const id=parts[0];
+      const text=parts.slice(1).join('||');
+      appNotes.push({id,text,date:r.date});
+    });
+
     setSyncStatus('','Synkronisert '+today());
     renderAll();
-  }catch(e){setSyncStatus('error','Feil ved henting');}
+    isSyncing=false;
+  }catch(e){
+    setSyncStatus('error','Feil ved henting');
+    isSyncing=false;
+  }
 }
 
 async function saveToSheet(){
   setSyncStatus('syncing','Lagrer...');
   const rows=[];
-  [...SAM_ITEMS,...STUDIER_ITEMS,...PRIVAT_ITEMS].forEach(item=>{
+
+  ALL_ITEMS.forEach(item=>{
     (notes[item.id]||[]).forEach(n=>{
       rows.push({type:'mienote',pid:item.id,text:n.id+'||'+n.text,date:n.date,done:'false'});
     });
@@ -336,15 +350,24 @@ async function saveToSheet(){
   });
 
   try{
+    // Hent alle rader, behold ikke-Mie rader, erstatt Mie sine rader
     const res=await fetch(API+'?t='+Date.now());
     const allRows=await res.json();
     const otherRows=allRows.filter(r=>!['mienote','mieself','mieapp'].includes(r.type));
     await fetch(API,{method:'POST',body:JSON.stringify({action:'replace',rows:[...otherRows,...rows]})});
     setSyncStatus('','Lagret '+today());
-  }catch(e){setSyncStatus('error','Feil ved lagring');}
+  }catch(e){
+    setSyncStatus('error','Feil ved lagring');
+  }
 }
 
-function renderAll(){renderOversikt();renderSamTabs();renderSamContent();renderStudierTabs();renderStudierContent();renderPrivatTabs();renderPrivatContent();renderSelf();renderAppNotes();}
+function renderAll(){
+  renderOversikt();
+  renderSamTabs();renderSamContent();
+  renderStudierTabs();renderStudierContent();
+  renderPrivatTabs();renderPrivatContent();
+  renderSelf();renderAppNotes();
+}
 
 function showTab(id,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -361,28 +384,27 @@ function showTab(id,btn){
 
 function renderOversikt(){
   const el=document.getElementById('oversikt');
-  const totalNotes=Object.values(notes).reduce((a,b)=>a+b.length,0);
+  const samCount=SAM_ITEMS.reduce((a,i)=>a+(notes[i.id]||[]).length,0);
+  const studierCount=STUDIER_ITEMS.reduce((a,i)=>a+(notes[i.id]||[]).length,0);
+  const privatCount=PRIVAT_ITEMS.reduce((a,i)=>a+(notes[i.id]||[]).length,0);
   el.innerHTML=`
     <div class="metric-row">
-      <div class="metric" onclick="goToTab('sam')"><div class="metric-label">SAM notater</div><div class="metric-val">${[...SAM_ITEMS].reduce((a,i)=>a+(notes[i.id]||[]).length,0)}</div></div>
-      <div class="metric" onclick="goToTab('studier')"><div class="metric-label">Studier notater</div><div class="metric-val">${[...STUDIER_ITEMS].reduce((a,i)=>a+(notes[i.id]||[]).length,0)}</div></div>
-      <div class="metric" onclick="goToTab('privat')"><div class="metric-label">Privat notater</div><div class="metric-val">${[...PRIVAT_ITEMS].reduce((a,i)=>a+(notes[i.id]||[]).length,0)}</div></div>
+      <div class="metric" onclick="goToTab('sam')"><div class="metric-label">SAM</div><div class="metric-val">${samCount}</div></div>
+      <div class="metric" onclick="goToTab('studier')"><div class="metric-label">Studier</div><div class="metric-val">${studierCount}</div></div>
+      <div class="metric" onclick="goToTab('privat')"><div class="metric-label">Privat</div><div class="metric-val">${privatCount}</div></div>
       <div class="metric" onclick="goToTab('applications')"><div class="metric-label">Applications</div><div class="metric-val">${appNotes.length}</div></div>
-      <div class="metric" onclick="goToTab('meg')"><div class="metric-label">Mine notater</div><div class="metric-val">${selfNotes.length}</div></div>
+      <div class="metric" onclick="goToTab('meg')"><div class="metric-label">Meg selv</div><div class="metric-val">${selfNotes.length}</div></div>
     </div>
     <p class="section-label" style="margin-bottom:8px;">Kategorier</p>
     ${[
-      {id:'sam',label:'SAM',items:SAM_ITEMS,avClass:'av-gold',initials:'SAM'},
-      {id:'studier',label:'Studier',items:STUDIER_ITEMS,avClass:'av-purple',initials:'ST'},
-      {id:'privat',label:'Privat',items:PRIVAT_ITEMS,avClass:'av-rose',initials:'PR'}
-    ].map(cat=>{
-      const count=cat.items.reduce((a,i)=>a+(notes[i.id]||[]).length,0);
-      return `<div class="person-card" onclick="goToTab('${cat.id}')">
-        <div class="avatar ${cat.avClass}">${cat.initials}</div>
-        <div style="flex:1;"><div style="font-weight:500;font-size:14px;color:#2a2a2a;">${cat.label}</div><div style="font-size:12px;color:#a08040;">${cat.items.map(i=>i.name).join(' · ')}</div></div>
-        <div>${count>0?`<span class="badge badge-note">${count} notater</span>`:'<span class="badge badge-done">Tomt</span>'}</div>
-      </div>`;
-    }).join('')}
+      {id:'sam',label:'SAM',items:SAM_ITEMS,avClass:'av-gold',initials:'SAM',count:samCount},
+      {id:'studier',label:'Studier',items:STUDIER_ITEMS,avClass:'av-purple',initials:'ST',count:studierCount},
+      {id:'privat',label:'Privat',items:PRIVAT_ITEMS,avClass:'av-rose',initials:'PR',count:privatCount}
+    ].map(cat=>`<div class="person-card" onclick="goToTab('${cat.id}')">
+      <div class="avatar ${cat.avClass}">${cat.initials}</div>
+      <div style="flex:1;"><div style="font-weight:500;font-size:14px;color:#2a2a2a;">${cat.label}</div><div style="font-size:12px;color:#a08040;">${cat.items.map(i=>i.name).join(' · ')}</div></div>
+      <div>${cat.count>0?`<span class="badge badge-note">${cat.count} notater</span>`:'<span class="badge badge-done">Tomt</span>'}</div>
+    </div>`).join('')}
     <div class="person-card" onclick="goToTab('applications')">
       <div class="avatar av-purple">AP</div>
       <div style="flex:1;"><div style="font-weight:500;font-size:14px;color:#2a2a2a;">Applications</div><div style="font-size:12px;color:#a08040;">Søknader og notater</div></div>
@@ -403,8 +425,7 @@ function renderSamTabs(){
 function switchSam(id){activeSam=id;renderSamTabs();renderSamContent();}
 function renderSamContent(){
   const item=SAM_ITEMS.find(x=>x.id===activeSam);
-  const itemNotes=notes[item.id]||[];
-  document.getElementById('sam-content').innerHTML=renderCategoryCard(item,itemNotes,'deleteSamNote','addSamNote');
+  document.getElementById('sam-content').innerHTML=renderCategoryCard(item,notes[item.id]||[],'deleteSamNote','addSamNote');
 }
 
 function renderStudierTabs(){
@@ -415,8 +436,7 @@ function renderStudierTabs(){
 function switchStudier(id){activeStudier=id;renderStudierTabs();renderStudierContent();}
 function renderStudierContent(){
   const item=STUDIER_ITEMS.find(x=>x.id===activeStudier);
-  const itemNotes=notes[item.id]||[];
-  document.getElementById('studier-content').innerHTML=renderCategoryCard(item,itemNotes,'deleteStudierNote','addStudierNote');
+  document.getElementById('studier-content').innerHTML=renderCategoryCard(item,notes[item.id]||[],'deleteStudierNote','addStudierNote');
 }
 
 function renderPrivatTabs(){
@@ -427,8 +447,7 @@ function renderPrivatTabs(){
 function switchPrivat(id){activePrivat=id;renderPrivatTabs();renderPrivatContent();}
 function renderPrivatContent(){
   const item=PRIVAT_ITEMS.find(x=>x.id===activePrivat);
-  const itemNotes=notes[item.id]||[];
-  document.getElementById('privat-content').innerHTML=renderCategoryCard(item,itemNotes,'deletePrivatNote','addPrivatNote');
+  document.getElementById('privat-content').innerHTML=renderCategoryCard(item,notes[item.id]||[],'deletePrivatNote','addPrivatNote');
 }
 
 function renderCategoryCard(item,itemNotes,deleteFn,addFn){
@@ -488,13 +507,11 @@ function renderSelf(){
   nl.innerHTML=selfNotes.length===0?'<p class="empty">Ingen notater ennå.</p>':
     selfNotes.map(n=>{
       if(n.imageUrl){
-        return `<div class="photo-item">
-          <div style="flex:1;">
-            <img src="${n.imageUrl}" alt="Bilde" onclick="window.open('${n.imageUrl}','_blank')" />
-            <div style="font-size:11px;color:#c8a860;margin-top:4px;">${n.date}</div>
-            <button class="btn-sm" style="margin-top:4px;" onclick="deleteSelfNote('${n.id}')">Slett</button>
-          </div>
-        </div>`;
+        return `<div class="photo-item"><div style="flex:1;">
+          <img src="${n.imageUrl}" alt="Bilde" onclick="window.open('${n.imageUrl}','_blank')" />
+          <div style="font-size:11px;color:#c8a860;margin-top:4px;">${n.date}</div>
+          <button class="btn-sm" style="margin-top:4px;" onclick="deleteSelfNote('${n.id}')">Slett</button>
+        </div></div>`;
       }
       return makeNoteRow(n,'selfnote','deleteSelfNote');
     }).join('');
