@@ -37,7 +37,6 @@
   .badge{font-size:11px;padding:3px 9px;border-radius:8px;display:inline-block;}
   .badge-note{background:#fff3cc;color:#b8860b;}
   .badge-done{background:#d1fae5;color:#064e3b;}
-  .badge-challenge{background:#ffe4e6;color:#9f1239;}
   textarea{width:100%;border:1px solid #d4a843;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;resize:vertical;min-height:80px;outline:none;}
   textarea::placeholder{color:#c8a860;}
   input[type=text]{width:100%;border:1px solid #d4a843;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;outline:none;}
@@ -56,8 +55,6 @@
   .person-tab-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
   .ptab{padding:6px 14px;border:1px solid #d4a843;border-radius:8px;font-size:13px;cursor:pointer;color:#a08040;background:#fff;}
   .ptab.active{background:#d4a843;color:#fff;font-weight:500;border-color:#d4a843;}
-  .item-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #f0e0b0;}
-  .item-row:last-child{border-bottom:none;}
   .item-text{font-size:13px;color:#2a2a2a;flex:1;line-height:1.5;}
   .item-edit-input{flex:1;border:1px solid #d4a843;border-radius:6px;padding:4px 8px;font-size:13px;font-family:inherit;color:#2a2a2a;background:#fffdf5;outline:none;}
   .note-item{padding:8px 0;border-bottom:1px solid #f0e0b0;font-size:13px;color:#2a2a2a;line-height:1.5;display:flex;gap:6px;align-items:flex-start;}
@@ -87,7 +84,6 @@
 </style>
 </head>
 <body>
-
 <div id="login-screen">
   <div class="login-box">
     <div class="angel">👼</div>
@@ -170,7 +166,7 @@
 
 <script>
 const PASSWORD='Mie123';
-const API='https://script.google.com/macros/s/AKfycbxyZSxlW3f9kWwvaFd9Ez7S4hiP-HV9t11A3mrXKBZu6zAQTYT8uuvpKvCRVGuRM1hp/exec';
+const API='https://script.google.com/macros/s/AKfycbwoZST-jwWWh2oRevWBzqqNyWr1WDkQccPri2C2aa1alD1k3mYWLjKMLpqh1aKpmzJU/exec';
 
 const SAM_ITEMS=[
   {id:'sam_tasks',name:'Tasks',initials:'TS',avClass:'av-gold'},
@@ -187,7 +183,6 @@ const PRIVAT_ITEMS=[
   {id:'priv_trening',name:'Trening',initials:'TR',avClass:'av-teal'},
   {id:'priv_personal',name:'Personal',initials:'PE',avClass:'av-rose'}
 ];
-
 const ALL_ITEMS=[...SAM_ITEMS,...STUDIER_ITEMS,...PRIVAT_ITEMS];
 
 let notes={};
@@ -295,13 +290,12 @@ async function syncFromSheet(){
   try{
     const res=await fetch(API+'?t='+Date.now());
     const rows=await res.json();
-    const mieRows=rows.filter(r=>String(r.text).startsWith('mie_'));
 
     ALL_ITEMS.forEach(item=>{notes[item.id]=[];});
     selfNotes=[];
     appNotes=[];
 
-    mieRows.filter(r=>r.type==='mienote').forEach(r=>{
+    rows.filter(r=>r.type==='mienote').forEach(r=>{
       const parts=r.text.split('||');
       const id=parts[0];
       const cat=r.pid;
@@ -309,7 +303,7 @@ async function syncFromSheet(){
       if(notes[cat]!==undefined){notes[cat].push({id,text,date:r.date});}
     });
 
-    mieRows.filter(r=>r.type==='mieself').forEach(r=>{
+    rows.filter(r=>r.type==='mieself').forEach(r=>{
       const parts=r.text.split('||');
       const id=parts[0];
       const rest=parts.slice(1).join('||');
@@ -317,7 +311,7 @@ async function syncFromSheet(){
       else{selfNotes.push({id,text:rest,imageUrl:'',date:r.date});}
     });
 
-    mieRows.filter(r=>r.type==='mieapp').forEach(r=>{
+    rows.filter(r=>r.type==='mieapp').forEach(r=>{
       const parts=r.text.split('||');
       const id=parts[0];
       const text=parts.slice(1).join('||');
@@ -336,7 +330,6 @@ async function syncFromSheet(){
 async function saveToSheet(){
   setSyncStatus('syncing','Lagrer...');
   const rows=[];
-
   ALL_ITEMS.forEach(item=>{
     (notes[item.id]||[]).forEach(n=>{
       rows.push({type:'mienote',pid:item.id,text:n.id+'||'+n.text,date:n.date,done:'false'});
@@ -348,13 +341,8 @@ async function saveToSheet(){
   appNotes.forEach(n=>{
     rows.push({type:'mieapp',pid:'mie_app',text:n.id+'||'+n.text,date:n.date,done:'false'});
   });
-
   try{
-    // Hent alle rader, behold ikke-Mie rader, erstatt Mie sine rader
-    const res=await fetch(API+'?t='+Date.now());
-    const allRows=await res.json();
-    const otherRows=allRows.filter(r=>!['mienote','mieself','mieapp'].includes(r.type));
-    await fetch(API,{method:'POST',body:JSON.stringify({action:'replace',rows:[...otherRows,...rows]})});
+    await fetch(API,{method:'POST',body:JSON.stringify({action:'replace',rows})});
     setSyncStatus('','Lagret '+today());
   }catch(e){
     setSyncStatus('error','Feil ved lagring');
